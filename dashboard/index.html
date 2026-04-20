@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intake IQ — AI-Powered Call Center Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #000;
+  color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============ HEADER ============ */
+.header {
+  background: linear-gradient(135deg, #c91b2b 0%, #e63946 100%);
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.logo-mark {
+  width: 48px; height: 48px;
+  background: #000;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: -0.5px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.logo-text {
+  display: flex; flex-direction: column; gap: 1px;
+}
+.logo-text .demo-tag {
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  opacity: 0.8;
+}
+.logo-text .brand {
+  font-size: 22px; font-weight: 900; letter-spacing: -0.5px;
+  line-height: 1;
+}
+.header-kpis {
+  display: flex; gap: 0; margin-left: auto;
+  flex-wrap: wrap;
+}
+.kpi {
+  background: rgba(0,0,0,0.3);
+  border-left: 1px solid rgba(255,255,255,0.15);
+  padding: 6px 22px;
+  text-align: center;
+  min-width: 110px;
+}
+.kpi:first-child { border-left: none; }
+.kpi-value {
+  font-size: 22px; font-weight: 800; line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+.kpi-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+/* ============ FILTER BAR ============ */
+.filter-bar {
+  background: linear-gradient(180deg, #8b0f1c 0%, #6b0a13 100%);
+  padding: 10px 28px;
+  display: flex; align-items: center; gap: 18px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(0,0,0,0.3);
+}
+.filter-group {
+  display: flex; align-items: center; gap: 8px;
+}
+.filter-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+  color: rgba(255,255,255,0.8);
+}
+.filter-select, .filter-input {
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  min-width: 120px;
+  cursor: pointer;
+}
+.filter-select:focus, .filter-input:focus {
+  outline: none;
+  border-color: #fff;
+}
+.reset-btn {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.5);
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  margin-left: auto;
+}
+.reset-btn:hover { background: rgba(255,255,255,0.1); }
+
+/* ============ TAB BAR ============ */
+.tab-bar {
+  background: #0f0f0f;
+  border-bottom: 1px solid #2a2a2a;
+  padding: 0 28px;
+  display: flex;
+  gap: 4px;
+}
+.tab {
+  background: transparent;
+  color: #888;
+  border: none;
+  padding: 14px 22px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+.tab:hover { color: #ccc; }
+.tab.active {
+  color: #fff;
+  border-bottom-color: #e63946;
+}
+.tab .count {
+  background: #e63946;
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+/* ============ CONTENT ============ */
+.content {
+  padding: 24px 28px;
+  min-height: calc(100vh - 180px);
+}
+.view { display: none; }
+.view.active { display: block; }
+
+/* ============ OVERVIEW GRID ============ */
+.grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(12, 1fr);
+}
+.card {
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 20px;
+  overflow: hidden;
+}
+.card-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #888;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.card-title .right {
+  float: right;
+  color: #e63946;
+  font-weight: 700;
+}
+
+.col-6 { grid-column: span 6; }
+.col-12 { grid-column: span 12; }
+.col-4 { grid-column: span 4; }
+.col-8 { grid-column: span 8; }
+
+@media (max-width: 900px) {
+  .col-6, .col-4, .col-8 { grid-column: span 12; }
+}
+
+.chart-container {
+  position: relative;
+  height: 300px;
+}
+.chart-container.tall { height: 360px; }
+.chart-container.short { height: 240px; }
+
+/* ============ TABLE ============ */
+.table-wrap {
+  overflow-x: auto;
+  background: #0a0a0a;
+  border-radius: 6px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+thead {
+  background: #1a1a1a;
+  position: sticky; top: 0;
+}
+th {
+  text-align: left;
+  padding: 12px 14px;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  color: #888;
+  text-transform: uppercase;
+  border-bottom: 1px solid #2a2a2a;
+}
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #1a1a1a;
+  color: #ddd;
+  vertical-align: top;
+}
+tr:hover td { background: #141414; }
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.badge-booked { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+.badge-info { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+.badge-not-qualified { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+.badge-voicemail { background: rgba(156,163,175,0.15); color: #9ca3af; border: 1px solid rgba(156,163,175,0.3); }
+.badge-hung { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+.badge-wrong { background: rgba(139,92,246,0.15); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.3); }
+
+.ai-summary {
+  color: #b8b8b8;
+  font-style: italic;
+  font-size: 12px;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.ai-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+.ai-on { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.6); }
+.ai-off { background: #444; }
+
+/* ============ MAP ============ */
+#map {
+  height: 500px;
+  border-radius: 6px;
+  background: #0a0a0a;
+}
+.leaflet-container { background: #0a0a0a !important; }
+.leaflet-popup-content-wrapper {
+  background: #1a1a1a; color: #fff;
+  border-radius: 6px;
+  border: 1px solid #e63946;
+}
+.leaflet-popup-tip { background: #1a1a1a !important; }
+.leaflet-popup-content {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  margin: 10px 14px !important;
+}
+.popup-firm { font-weight: 700; font-size: 13px; color: #fff; margin-bottom: 4px; }
+.popup-meta { color: #aaa; font-size: 11px; }
+
+/* ============ FOOTER ============ */
+.footer {
+  padding: 18px 28px;
+  text-align: center;
+  font-size: 11px;
+  color: #666;
+  border-top: 1px solid #1a1a1a;
+  letter-spacing: 0.5px;
+}
+.footer a { color: #e63946; text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+/* ============ LOADING ============ */
+.loading {
+  display: flex; justify-content: center; align-items: center;
+  padding: 60px; color: #666;
+  font-size: 12px; letter-spacing: 1px;
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid #2a2a2a;
+  border-top-color: #e63946;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============ SEARCH ============ */
+.search-row {
+  display: flex; gap: 12px; margin-bottom: 16px;
+  align-items: center;
+}
+.search-input {
+  flex: 1;
+  background: #0a0a0a;
+  color: #fff;
+  border: 1px solid #2a2a2a;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+}
+.search-input:focus {
+  outline: none;
+  border-color: #e63946;
+}
+
+.count-pill {
+  background: #1a1a1a;
+  color: #e63946;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-mark">IQ</div>
+  <div class="logo-text">
+    <div class="demo-tag">DEMO</div>
+    <div class="brand">INTAKE IQ</div>
+  </div>
+  <div class="header-kpis" id="header-kpis">
+    <div class="kpi"><div class="kpi-value">–</div><div class="kpi-label">FIRMS</div></div>
+    <div class="kpi"><div class="kpi-value">–</div><div class="kpi-label">CALLS 30D</div></div>
+    <div class="kpi"><div class="kpi-value">–</div><div class="kpi-label">BOOKED</div></div>
+    <div class="kpi"><div class="kpi-value">–</div><div class="kpi-label">CONVERSION</div></div>
+    <div class="kpi"><div class="kpi-value">–</div><div class="kpi-label">AI COVERAGE</div></div>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <span class="filter-label">FIRM</span>
+    <select class="filter-select" id="filter-firm"><option value="">All Firms</option></select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">LEAD TYPE</span>
+    <select class="filter-select" id="filter-lead"><option value="">All Types</option></select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">OUTCOME</span>
+    <select class="filter-select" id="filter-outcome"><option value="">All Outcomes</option></select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">STATE</span>
+    <select class="filter-select" id="filter-state"><option value="">All States</option></select>
+  </div>
+  <button class="reset-btn" id="reset-btn">RESET ALL</button>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab active" data-tab="overview">Overview</button>
+  <button class="tab" data-tab="calls">Call Log <span class="count" id="calls-count">–</span></button>
+  <button class="tab" data-tab="map">Firm Map</button>
+  <button class="tab" data-tab="firms">Firm Directory <span class="count" id="firms-count">–</span></button>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- ========== OVERVIEW ========== -->
+  <div class="view active" id="view-overview">
+    <div class="grid">
+      <div class="card col-8">
+        <div class="card-title">Daily Call Volume (30 days) <span class="right" id="ov-daily-total"></span></div>
+        <div class="chart-container"><canvas id="chart-daily"></canvas></div>
+      </div>
+      <div class="card col-4">
+        <div class="card-title">Call Outcomes</div>
+        <div class="chart-container"><canvas id="chart-outcomes"></canvas></div>
+      </div>
+      <div class="card col-8">
+        <div class="card-title">Top 20 Firms by Call Volume</div>
+        <div class="chart-container tall"><canvas id="chart-top-firms"></canvas></div>
+      </div>
+      <div class="card col-4">
+        <div class="card-title">Lead Type Mix</div>
+        <div class="chart-container tall"><canvas id="chart-lead-types"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CALL LOG ========== -->
+  <div class="view" id="view-calls">
+    <div class="search-row">
+      <input class="search-input" id="calls-search" placeholder="Search by firm name, lead type, or outcome...">
+      <span class="count-pill" id="calls-count-pill">0 CALLS</span>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Firm</th>
+              <th>Lead Type</th>
+              <th>Duration</th>
+              <th>Outcome</th>
+              <th>AI Summary</th>
+            </tr>
+          </thead>
+          <tbody id="calls-tbody">
+            <tr><td colspan="6" class="loading"><div class="spinner"></div>LOADING CALLS</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== MAP ========== -->
+  <div class="view" id="view-map">
+    <div class="card">
+      <div class="card-title">Firm Locations <span class="right">50 FIRMS · 20 CITIES</span></div>
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <!-- ========== FIRM DIRECTORY ========== -->
+  <div class="view" id="view-firms">
+    <div class="search-row">
+      <input class="search-input" id="firms-search" placeholder="Search firms by name, city, or state...">
+      <span class="count-pill" id="firms-count-pill">0 FIRMS</span>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Firm</th>
+              <th>Location</th>
+              <th>Size</th>
+              <th>AI</th>
+              <th>Total Calls</th>
+              <th>Booked</th>
+              <th>Conversion</th>
+              <th>Last Call</th>
+            </tr>
+          </thead>
+          <tbody id="firms-tbody">
+            <tr><td colspan="8" class="loading"><div class="spinner"></div>LOADING FIRMS</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Portfolio demo by Adam Higdon · All data is synthetic · <a href="https://adamhigdon.netlify.app">adamhigdon.netlify.app</a>
+</div>
+
+<script>
+// ============================================================================
+// STATE & CONFIG
+// ============================================================================
+const API = 'https://intakeiq-worker.adam-d1a.workers.dev';
+const RED = '#e63946';
+const RED_LIGHT = '#ff6b7a';
+const RED_DARK = '#a31523';
+
+let state = {
+  stats: null,
+  firms: [],
+  calls: [],
+  filters: { firm: '', lead: '', outcome: '', state: '' },
+  charts: {},
+  map: null,
+};
+
+// ============================================================================
+// FORMATTING HELPERS
+// ============================================================================
+function fmtNum(n) { return (n||0).toLocaleString(); }
+function fmtPct(n) { return Math.round(n||0) + '%'; }
+function fmtDuration(s) {
+  if (!s) return '0s';
+  if (s < 60) return s + 's';
+  const m = Math.floor(s/60), sec = s%60;
+  return m + 'm ' + sec + 's';
+}
+function fmtTime(ts) {
+  const d = new Date(ts.replace(' ', 'T') + 'Z');
+  const now = new Date();
+  const diff = (now - d) / 1000;
+  if (diff < 60) return Math.floor(diff) + 's ago';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+function outcomeBadge(outcome) {
+  const map = {
+    'Booked Consultation': 'badge-booked',
+    'Requested Info': 'badge-info',
+    'Not Qualified': 'badge-not-qualified',
+    'Voicemail': 'badge-voicemail',
+    'Hung Up': 'badge-hung',
+    'Wrong Number': 'badge-wrong',
+  };
+  return '<span class="badge ' + (map[outcome] || 'badge-info') + '">' + outcome + '</span>';
+}
+
+// ============================================================================
+// API
+// ============================================================================
+async function api(path) {
+  const r = await fetch(API + path);
+  return r.json();
+}
+
+// ============================================================================
+// BOOT
+// ============================================================================
+async function boot() {
+  try {
+    const [stats, firmsResp, callsResp] = await Promise.all([
+      api('/api/stats'),
+      api('/api/firms'),
+      api('/api/calls?limit=200'),
+    ]);
+    state.stats = stats;
+    state.firms = firmsResp.firms;
+    state.calls = callsResp.calls;
+
+    renderHeaderKPIs();
+    populateFilters();
+    renderOverview();
+    renderCalls();
+    renderFirms();
+    renderMap();
+
+    document.getElementById('calls-count').textContent = fmtNum(stats.kpis.total_calls_30d);
+    document.getElementById('firms-count').textContent = fmtNum(stats.kpis.total_firms);
+  } catch (e) {
+    console.error('Boot failed:', e);
+    alert('Failed to load data — API may be unavailable.');
+  }
+}
+
+// ============================================================================
+// HEADER KPIs
+// ============================================================================
+function renderHeaderKPIs() {
+  const k = state.stats.kpis;
+  const kpis = [
+    { label: 'FIRMS', value: fmtNum(k.total_firms) },
+    { label: 'CALLS 30D', value: fmtNum(k.total_calls_30d) },
+    { label: 'BOOKED', value: fmtNum(k.booked_calls_30d) },
+    { label: 'CONVERSION', value: fmtPct(k.conversion_rate) },
+    { label: 'AI COVERAGE', value: fmtPct(k.ai_coverage_pct) },
+  ];
+  document.getElementById('header-kpis').innerHTML = kpis.map(k =>
+    '<div class="kpi"><div class="kpi-value">' + k.value + '</div><div class="kpi-label">' + k.label + '</div></div>'
+  ).join('');
+}
+
+// ============================================================================
+// FILTERS
+// ============================================================================
+function populateFilters() {
+  const firmSel = document.getElementById('filter-firm');
+  state.firms.forEach(f => {
+    const o = document.createElement('option');
+    o.value = f.id;
+    o.textContent = f.name;
+    firmSel.appendChild(o);
+  });
+
+  const leadSel = document.getElementById('filter-lead');
+  state.stats.lead_types.forEach(lt => {
+    const o = document.createElement('option');
+    o.value = lt.lead_type;
+    o.textContent = lt.lead_type + ' (' + lt.count + ')';
+    leadSel.appendChild(o);
+  });
+
+  const outcomeSel = document.getElementById('filter-outcome');
+  state.stats.outcomes.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.outcome;
+    opt.textContent = o.outcome + ' (' + o.count + ')';
+    outcomeSel.appendChild(opt);
+  });
+
+  const stateSel = document.getElementById('filter-state');
+  const uniqueStates = [...new Set(state.firms.map(f => f.state))].sort();
+  uniqueStates.forEach(st => {
+    const o = document.createElement('option');
+    o.value = st;
+    o.textContent = st;
+    stateSel.appendChild(o);
+  });
+
+  ['filter-firm','filter-lead','filter-outcome','filter-state'].forEach(id => {
+    document.getElementById(id).addEventListener('change', onFilterChange);
+  });
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    ['filter-firm','filter-lead','filter-outcome','filter-state'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    onFilterChange();
+  });
+}
+
+async function onFilterChange() {
+  state.filters.firm = document.getElementById('filter-firm').value;
+  state.filters.lead = document.getElementById('filter-lead').value;
+  state.filters.outcome = document.getElementById('filter-outcome').value;
+  state.filters.state = document.getElementById('filter-state').value;
+  const params = new URLSearchParams();
+  if (state.filters.firm) params.set('firm_id', state.filters.firm);
+  if (state.filters.lead) params.set('lead_type', state.filters.lead);
+  if (state.filters.outcome) params.set('outcome', state.filters.outcome);
+  params.set('limit', '200');
+  const resp = await api('/api/calls?' + params.toString());
+  state.calls = resp.calls;
+  if (state.filters.state) {
+    state.calls = state.calls.filter(c => c.state === state.filters.state);
+  }
+  renderCalls();
+  renderFirms();
+  renderMap();
+}
+
+// ============================================================================
+// OVERVIEW CHARTS
+// ============================================================================
+function renderOverview() {
+  const s = state.stats;
+
+  // Daily volume line
+  document.getElementById('ov-daily-total').textContent = fmtNum(s.kpis.total_calls_30d) + ' CALLS';
+  const dailyCtx = document.getElementById('chart-daily').getContext('2d');
+  state.charts.daily = new Chart(dailyCtx, {
+    type: 'line',
+    data: {
+      labels: s.daily.map(d => d.day.slice(5)),
+      datasets: [
+        {
+          label: 'Total Calls',
+          data: s.daily.map(d => d.calls),
+          borderColor: RED,
+          backgroundColor: 'rgba(230,57,70,0.15)',
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2,
+          pointRadius: 2,
+          pointBackgroundColor: RED,
+        },
+        {
+          label: 'Booked',
+          data: s.daily.map(d => d.booked),
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.08)',
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2,
+          pointRadius: 2,
+          pointBackgroundColor: '#22c55e',
+        }
+      ]
+    },
+    options: chartOpts({ legend: true })
+  });
+
+  // Outcomes donut
+  const outcomesCtx = document.getElementById('chart-outcomes').getContext('2d');
+  state.charts.outcomes = new Chart(outcomesCtx, {
+    type: 'doughnut',
+    data: {
+      labels: s.outcomes.map(o => o.outcome),
+      datasets: [{
+        data: s.outcomes.map(o => o.count),
+        backgroundColor: ['#22c55e','#3b82f6','#f59e0b','#9ca3af','#ef4444','#8b5cf6'],
+        borderColor: '#0f0f0f',
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#ccc', font: { size: 10, family: 'Inter' }, padding: 8, boxWidth: 10 }
+        }
+      }
+    }
+  });
+
+  // Top firms horizontal bar
+  const topCtx = document.getElementById('chart-top-firms').getContext('2d');
+  state.charts.top = new Chart(topCtx, {
+    type: 'bar',
+    data: {
+      labels: s.top_firms.map(f => f.name.length > 30 ? f.name.slice(0,30) + '…' : f.name),
+      datasets: [{
+        label: 'Calls',
+        data: s.top_firms.map(f => f.calls),
+        backgroundColor: RED,
+        borderColor: RED_LIGHT,
+        borderWidth: 1,
+      }]
+    },
+    options: { ...chartOpts({ legend: false }), indexAxis: 'y' }
+  });
+
+  // Lead types donut
+  const leadCtx = document.getElementById('chart-lead-types').getContext('2d');
+  state.charts.leadTypes = new Chart(leadCtx, {
+    type: 'doughnut',
+    data: {
+      labels: s.lead_types.map(l => l.lead_type),
+      datasets: [{
+        data: s.lead_types.map(l => l.count),
+        backgroundColor: ['#e63946','#ff6b7a','#c91b2b','#8b0f1c','#f59e0b','#fbbf24','#3b82f6','#60a5fa','#8b5cf6','#a78bfa'],
+        borderColor: '#0f0f0f',
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '55%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#ccc', font: { size: 10, family: 'Inter' }, padding: 6, boxWidth: 10 }
+        }
+      }
+    }
+  });
+}
+
+function chartOpts({legend=false}) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: legend ? {
+        position: 'top',
+        labels: { color: '#ccc', font: { size: 11, family: 'Inter' } }
+      } : { display: false }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#888', font: { size: 10, family: 'Inter' } },
+        grid: { color: '#1a1a1a' }
+      },
+      y: {
+        ticks: { color: '#888', font: { size: 10, family: 'Inter' } },
+        grid: { color: '#1a1a1a' },
+        beginAtZero: true
+      }
+    }
+  };
+}
+
+// ============================================================================
+// CALL LOG
+// ============================================================================
+function renderCalls() {
+  const tbody = document.getElementById('calls-tbody');
+  const search = (document.getElementById('calls-search').value || '').toLowerCase();
+  const filtered = state.calls.filter(c => {
+    if (!search) return true;
+    return (c.firm_name || '').toLowerCase().includes(search)
+        || (c.lead_type || '').toLowerCase().includes(search)
+        || (c.outcome || '').toLowerCase().includes(search)
+        || (c.ai_summary || '').toLowerCase().includes(search);
+  });
+  document.getElementById('calls-count-pill').textContent = fmtNum(filtered.length) + ' CALLS';
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:40px;text-align:center;color:#666">No calls match current filters.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(c => `
+    <tr>
+      <td style="white-space:nowrap;color:#888">${fmtTime(c.timestamp)}</td>
+      <td><strong>${c.firm_name}</strong><br><span style="color:#666;font-size:11px">${c.city}, ${c.state}</span></td>
+      <td>${c.lead_type}</td>
+      <td style="color:#888">${fmtDuration(c.duration_seconds)}</td>
+      <td>${outcomeBadge(c.outcome)}</td>
+      <td style="max-width:340px">${c.ai_summary ? '<div class="ai-summary">' + c.ai_summary + '</div>' : '<span style="color:#444;font-size:11px">—</span>'}</td>
+    </tr>
+  `).join('');
+}
+
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'calls-search') renderCalls();
+  if (e.target.id === 'firms-search') renderFirms();
+});
+
+// ============================================================================
+// FIRM DIRECTORY
+// ============================================================================
+function renderFirms() {
+  const tbody = document.getElementById('firms-tbody');
+  const search = (document.getElementById('firms-search').value || '').toLowerCase();
+  const filtered = state.firms.filter(f => {
+    if (state.filters.state && f.state !== state.filters.state) return false;
+    if (!search) return true;
+    return f.name.toLowerCase().includes(search)
+        || f.city.toLowerCase().includes(search)
+        || f.state.toLowerCase().includes(search);
+  }).sort((a,b) => (b.call_count||0) - (a.call_count||0));
+
+  document.getElementById('firms-count-pill').textContent = fmtNum(filtered.length) + ' FIRMS';
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="padding:40px;text-align:center;color:#666">No firms match current filters.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(f => {
+    const conv = f.call_count > 0 ? Math.round((f.booked / f.call_count) * 100) : 0;
+    const lastCall = f.last_call ? fmtTime(f.last_call) : '—';
+    return `
+      <tr>
+        <td><strong>${f.name}</strong></td>
+        <td style="color:#888">${f.city}, ${f.state}</td>
+        <td><span style="text-transform:capitalize;font-size:11px;color:#aaa">${f.size_tier}</span></td>
+        <td><span class="ai-dot ${f.ai_enabled ? 'ai-on':'ai-off'}"></span><span style="font-size:11px;color:${f.ai_enabled?'#22c55e':'#666'}">${f.ai_enabled?'ON':'OFF'}</span></td>
+        <td style="font-weight:700">${fmtNum(f.call_count)}</td>
+        <td style="color:#22c55e;font-weight:600">${fmtNum(f.booked)}</td>
+        <td style="color:${conv>=35?'#22c55e':conv>=25?'#f59e0b':'#ef4444'};font-weight:700">${conv}%</td>
+        <td style="color:#888;font-size:11px">${lastCall}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ============================================================================
+// MAP
+// ============================================================================
+function renderMap() {
+  if (!state.map) {
+    state.map = L.map('map', { zoomControl: true, attributionControl: false }).setView([39.5, -96], 4);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd', maxZoom: 19,
+    }).addTo(state.map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd', maxZoom: 19,
+    }).addTo(state.map);
+  }
+  // Clear existing markers
+  state.map.eachLayer(l => { if (l instanceof L.CircleMarker) state.map.removeLayer(l); });
+
+  const firmsToShow = state.firms.filter(f => {
+    if (state.filters.state && f.state !== state.filters.state) return false;
+    return true;
+  });
+
+  firmsToShow.forEach(f => {
+    const radius = f.call_count > 60 ? 14 : f.call_count > 25 ? 10 : 7;
+    const marker = L.circleMarker([f.lat, f.lng], {
+      radius: radius,
+      fillColor: f.ai_enabled ? '#e63946' : '#888',
+      color: '#fff',
+      weight: 1.5,
+      opacity: 0.9,
+      fillOpacity: 0.75,
+    }).addTo(state.map);
+    const conv = f.call_count > 0 ? Math.round((f.booked/f.call_count)*100) : 0;
+    marker.bindPopup(`
+      <div class="popup-firm">${f.name}</div>
+      <div class="popup-meta">${f.city}, ${f.state}</div>
+      <div class="popup-meta" style="margin-top:6px">
+        <strong style="color:#e63946">${fmtNum(f.call_count)}</strong> calls ·
+        <strong style="color:#22c55e">${fmtNum(f.booked)}</strong> booked (${conv}%)
+      </div>
+      <div class="popup-meta">AI: ${f.ai_enabled ? '<span style="color:#22c55e">ON</span>' : '<span style="color:#666">OFF</span>'}</div>
+    `);
+  });
+}
+
+// ============================================================================
+// TABS
+// ============================================================================
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.dataset.tab;
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + target).classList.add('active');
+    // Force map to resize if switching to it
+    if (target === 'map' && state.map) {
+      setTimeout(() => state.map.invalidateSize(), 100);
+    }
+  });
+});
+
+// ============================================================================
+// GO
+// ============================================================================
+boot();
+</script>
+</body>
+</html>
