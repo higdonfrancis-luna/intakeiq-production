@@ -1,0 +1,9 @@
+{
+  "name": "intakeiq-worker",
+  "version": "1.0.0",
+  "description": "Intake IQ API Worker",
+  "main": "src/worker.js",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  }
+}
